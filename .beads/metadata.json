@@ -3,7 +3,7 @@
   "backend": "dolt",
   "dolt_mode": "server",
   "dolt_database": "evolving_demo",
-  "project_id": "16daf84d-7348-433b-ad88-4c31a99e0d82",
+  "project_id": "75821eee-0aa8-4319-bfa3-5a5fdd4012f3",
   "global_dolt_database": "beads_global",
   "global_project_id": "00000000-0000-0000-0000-000000000000"
 }
