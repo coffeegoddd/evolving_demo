@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Boston - Latest - Google News</title>
+    <link>https://news.google.com/</link>
+    <description>Google News</description>
+    <item>
+      <title>Boston transit expansion approved - The Boston Globe</title>
+      <link>https://example.com/geo-article-1</link>
+      <pubDate>Thu, 28 May 2026 13:00:00 GMT</pubDate>
+      <source url="https://www.bostonglobe.com">The Boston Globe</source>
+    </item>
+    <item>
+      <title>Red Sox sign new pitcher - WBUR</title>
+      <link>https://example.com/geo-article-2</link>
+      <pubDate>Thu, 28 May 2026 11:30:00 GMT</pubDate>
+      <source url="https://www.wbur.org">WBUR</source>
+    </item>
+  </channel>
+</rss>

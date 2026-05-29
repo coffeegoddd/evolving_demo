@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -24,7 +25,7 @@ func TestFetchTopHeadlines(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	items, err := fetchFrom(ctx, srv.Client(), srv.URL, 10)
+	items, err := fetchWith(ctx, srv.Client(), srv.URL, Query{N: 10})
 	if err != nil {
 		t.Fatalf("fetch: %v", err)
 	}
@@ -64,12 +65,111 @@ func TestFetchTopHeadlines_LimitN(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	items, err := fetchFrom(context.Background(), srv.Client(), srv.URL, 2)
+	items, err := fetchWith(context.Background(), srv.Client(), srv.URL, Query{N: 2})
 	if err != nil {
 		t.Fatalf("fetch: %v", err)
 	}
 	if len(items) != 2 {
 		t.Fatalf("expected 2 items with n=2, got %d", len(items))
+	}
+}
+
+func TestFetchWith_CountryEdition(t *testing.T) {
+	body, err := os.ReadFile("testdata/sample_uk.rss")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	var gotURL string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotURL = r.URL.String()
+		w.Write(body)
+	}))
+	defer srv.Close()
+
+	items, err := fetchWith(context.Background(), srv.Client(), srv.URL, Query{Country: "GB"})
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if !strings.Contains(gotURL, "gl=GB") || !strings.Contains(gotURL, "hl=en-GB") {
+		t.Errorf("expected GB edition params, got %q", gotURL)
+	}
+	if len(items) != 2 || items[0].Source != "BBC News" {
+		t.Errorf("did not parse UK fixture: %+v", items)
+	}
+}
+
+func TestFetchWith_LocationHitsGeoSection(t *testing.T) {
+	body, err := os.ReadFile("testdata/sample_geo.rss")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Write(body)
+	}))
+	defer srv.Close()
+
+	items, err := fetchWith(context.Background(), srv.Client(), srv.URL, Query{Location: "Boston"})
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if gotPath != "/rss/headlines/section/geo/Boston" {
+		t.Errorf("expected geo section path, got %q", gotPath)
+	}
+	if len(items) != 2 || items[0].Source != "The Boston Globe" {
+		t.Errorf("did not parse geo fixture: %+v", items)
+	}
+}
+
+func TestFetchWith_GeoEmptyFallsBackToSearch(t *testing.T) {
+	emptyBody, err := os.ReadFile("testdata/sample_empty.rss")
+	if err != nil {
+		t.Fatalf("read empty fixture: %v", err)
+	}
+	geoBody, err := os.ReadFile("testdata/sample_geo.rss")
+	if err != nil {
+		t.Fatalf("read geo fixture: %v", err)
+	}
+
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if strings.HasPrefix(r.URL.Path, "/rss/headlines/section/geo/") {
+			w.Write(emptyBody)
+			return
+		}
+		w.Write(geoBody)
+	}))
+	defer srv.Close()
+
+	items, err := fetchWith(context.Background(), srv.Client(), srv.URL, Query{Location: "Nowhereville"})
+	if err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if len(paths) != 2 {
+		t.Fatalf("expected 2 requests (geo + search fallback), got %d: %v", len(paths), paths)
+	}
+	if paths[0] != "/rss/headlines/section/geo/Nowhereville" {
+		t.Errorf("first request should be geo section, got %q", paths[0])
+	}
+	if paths[1] != "/rss/search" {
+		t.Errorf("second request should be search, got %q", paths[1])
+	}
+	if len(items) == 0 {
+		t.Error("expected fallback to surface search results, got 0 items")
+	}
+}
+
+func TestFetchWith_UnknownCountryErrors(t *testing.T) {
+	_, err := fetchWith(context.Background(), http.DefaultClient, "https://news.google.com", Query{Country: "XX"})
+	if err == nil {
+		t.Fatal("expected error for unknown country, got nil")
+	}
+	if !strings.Contains(err.Error(), "unsupported country") {
+		t.Errorf("error message should mention unsupported country, got %q", err)
 	}
 }
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Top stories - UK - Google News</title>
+    <link>https://news.google.com/</link>
+    <description>Google News</description>
+    <item>
+      <title>PM addresses Parliament - BBC News</title>
+      <link>https://example.com/uk-article-1</link>
+      <pubDate>Thu, 28 May 2026 15:20:00 GMT</pubDate>
+      <source url="https://www.bbc.co.uk">BBC News</source>
+    </item>
+    <item>
+      <title>Pound rises on inflation data - The Guardian</title>
+      <link>https://example.com/uk-article-2</link>
+      <pubDate>Thu, 28 May 2026 14:00:00 GMT</pubDate>
+      <source url="https://www.theguardian.com">The Guardian</source>
+    </item>
+  </channel>
+</rss>
